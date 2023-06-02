@@ -5,110 +5,55 @@
 class QuestionsController < ApplicationController
   # Девайзовская проверка аутентификации
   before_action :authenticate_user!
+  before_action :authorize_admin!
 
-  # Нельзя создавать игру, если не закончена предыдущая
-  before_action :goto_game_in_progress!, only: %i[create]
-
-  # Загружаем игру из базы для текущего юзера
-  before_action :set_game, except: %i[create]
-
-  # Если игра завершена, отправляем юзера на его профиль, где он
-  # видит статистику своих игр.
-  before_action :redirect_from_finished_game!, except: %i[create]
-
-  def show
-    @game_question = @game.current_game_question
+  def new
   end
 
   def create
-    begin
-      # Создаем игру для залогиненного юзера
-      @game = Game.create_game_for_user!(current_user)
+    level = params[:questions_level].to_i
+    q_file = params[:questions_file]
 
-      # Отправляемся на страницу игры
-      redirect_to game_path(@game), notice: I18n.t(
-        'controllers.games.game_created',
-        created_at: @game.created_at
-      )
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => ex
-      # Если ошибка создания игры
-      Rails.logger.error("Error creating game for user #{current_user.id}, " \
-                         "msg = #{ex}. #{ex.backtrace}")
-
-      # Отправляемся назад с сообщением
-      redirect_to :back, alert: I18n.t('controllers.games.game_not_created')
-    end
-  end
-
-  # Действие answer принимает ответ на вопрос
-  # Единственный обязательный параметр — params[:letter]
-  # Это буква, которую выбрал игрок.
-  def answer
-    # Выясняем у игры, правильно ли ответили
-    @answer_is_correct = @game.answer_current_question!(params[:letter])
-    @game_question = @game.current_game_question
-
-    unless @answer_is_correct
-      # Если ответили неправильно, отправляем юзера на профиль с сообщением
-      flash[:alert] = I18n.t(
-        'controllers.games.bad_answer',
-        answer: @game_question.correct_answer,
-        prize: view_context.number_to_currency(@game.prize)
-      )
-    end
-
-    if @game.finished?
-      # Если игра закончилась, отправляем юзера на свой профиль
-      redirect_to user_path(current_user)
+    if q_file.respond_to?(:readlines)
+      file_lines = q_file.readlines
+    elsif q_file.respond_to?(:path)
+      file_lines = File.readlines(q_file.path)
     else
-      # Иначе — обратно на экран игры
-      redirect_to game_path(@game)
+      redirect_to new_questions_path, alert: "Bad file_data: #{q_file.class.name}, #{q_file.inspect}"
+      false
     end
-  end
-
-  # Действие take_money вызывается из шаблона, когда пользователь нажимает кнопку
-  # «Взять деньги». Параметров нет, т.к. вся необходимая информация есть в базе.
-  def take_money
-    # Заканчиваем игру
-    @game.take_money!
-
-    # Отправляем пользователя на профиль с сообщение о выигрыше
-    redirect_to user_path(current_user), flash: {
-      warning: I18n.t(
-        'controllers.games.game_finished',
-        prize: view_context.number_to_currency(@game.prize)
-      )
-    }
+    start_time = Time.now
+    failed_count = create_questions_form_lines(file_lines, level)
+    redirect_to new_questions_path,
+                notice: "Уровень #{level}, обработано #{file_lines.size}," +
+                  " создано #{file_lines.size - failed_count}," +
+                  " время #{Time.at((Time.now - start_time).to_i).utc.strftime '%S.%L сек'}"
   end
 
   private
 
-  def redirect_from_finished_game!
-    if @game.finished?
-      redirect_to user_path(current_user), alert: I18n.t(
-        'controllers.games.game_closed',
-        game_id: @game.id
-      )
-    end
+  def authorize_admin!
+    redirect_to root_path unless current_user.is_admin
   end
 
-  def goto_game_in_progress!
-    game_in_progress = current_user.games.in_progress.first
-
-    unless game_in_progress.blank?
-      redirect_to game_path(game_in_progress), alert: I18n.t(
-        'controllers.games.game_not_finished'
-      )
+  def create_questions_from_lines(lines, level)
+    failed = 0
+    ActiveRecord::Base.transaction do
+      lines.each do |line|
+        ar = line.split('|')
+        q = Question.create(
+          level: level,
+          text: ar[0].squish,
+          answer1: ar[1].squish,
+          answer2: ar[2].squish,
+          answer3: ar[3].squish,
+          answer4: ar[4].squish
+        )
+        failed += 1 unless q.valid?
+      end
     end
+
+    failed
   end
 
-  def set_game
-    @game = current_user.games.find_by(id: params[:id])
-
-    if @game.blank?
-      redirect_to root_path, alert: I18n.t(
-        'controllers.games.not_your_game'
-      )
-    end
-  end
 end

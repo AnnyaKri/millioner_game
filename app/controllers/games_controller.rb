@@ -91,7 +91,9 @@ class GamesController < ApplicationController
   def goto_game_in_progress!
     # вот нам и пригодился наш scope из модели Game
     game_in_progress = current_user.games.in_progress.first
-    redirect_to game_path(game_in_progress), alert: I18n.t('controllers.games.game_not_finished') unless game_in_progress.blank?
+    unless game_in_progress.blank?
+      redirect_to game_path(game_in_progress), alert: I18n.t('controllers.games.game_not_finished') unless game_in_progress.blank?
+    end
   end
 
   def set_game
