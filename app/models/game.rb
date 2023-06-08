@@ -43,7 +43,11 @@ class Game < ApplicationRecord
       Question::QUESTION_LEVELS.each do |i|
         q = Question.where(level: i).order('RANDOM()').first
         ans = [1, 2, 3, 4]
-        game.game_questions.create!(question: q, a: ans.shuffle!.pop, b: ans.shuffle!.pop, c: ans.shuffle!.pop, d: ans.shuffle!.pop)
+        game.game_questions.create!(
+          question: q, a: ans.shuffle!.pop,
+          b: ans.shuffle!.pop,
+          c: ans.shuffle!.pop,
+          d: ans.shuffle!.pop)
       end
       game
     end

@@ -33,7 +33,7 @@
   <div class="col-sm-4">
     <%# Для каждой подсказки с помощью объекта game проверяем, не была ли подсказка использована ранее %>
     <% unless game.fifty_fifty_used? %>
-      <%= link_to '50/50', help_game_path(game, help_type: :fifty_fifty), method: :put, class: 'btn btn-default btn-block btn-help' %>
+      <%= button_to '50/50', help_game_path(game, help_type: :fifty_fifty), method: :put, class: 'btn btn-default btn-block btn-help' %>
     <% end %>
   </div>
   <div class="col-sm-4">

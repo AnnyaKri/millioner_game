@@ -1,3 +1,4 @@
+require 'game_help_generator'
 # Игровой вопрос — при создании новой игры формируется массив
 # из 15 игровых вопросов для конкретной игры и игрока.
 class GameQuestion < ActiveRecord::Base
@@ -73,6 +74,13 @@ class GameQuestion < ActiveRecord::Base
     # массив ключей
     keys_to_use = keys_to_use_in_help
     self.help_hash[:audience_help] = GameHelpGenerator.audience_distribution(keys_to_use, correct_answer_key)
+    # self.help_hash[:audience_help] = {
+    #   a: rand(100),
+    #   b: rand(100),
+    #   c: rand(100),
+    #   d: rand(100),
+    # }
+
     save
   end
 
