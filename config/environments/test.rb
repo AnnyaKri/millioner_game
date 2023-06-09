@@ -23,7 +23,7 @@ Rails.application.configure do
   }
 
   # Show full error reports and disable caching.
-  config.consider_all_requests_local       = true
+  config.consider_all_requests_local = true
   config.action_controller.perform_caching = false
   config.cache_store = :null_store
 
@@ -54,6 +54,13 @@ Rails.application.configure do
 
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true
+  # Настройки, чтобы в открываемых с помощью save_and_open_page страницах
+  # были все нужные стили
+  # Внимание! Нужно поднять сервер на 3000-м порте.
+  config.serve_static_files = true
+  config.assets.debug = true
+  config.asset_host = 'http://localhost:3000'
+  config.static_cache_control = 'public, max-age=3600'
 
   # Annotate rendered view with file names.
   # config.action_view.annotate_rendered_view_with_filenames = true
