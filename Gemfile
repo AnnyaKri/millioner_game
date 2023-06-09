@@ -28,6 +28,13 @@ group :development, :test do
   gem "shoulda-matchers"
 end
 
+group :test do
+  gem 'capybara'
+  # Этот гем позволяет сохранять и открывать скриншот страницы
+  # с результатом активности юзера
+  gem 'launchy'
+end
+
 group :development do
   gem "web-console"
 end
